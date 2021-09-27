@@ -36,7 +36,7 @@ ext.on('start', async () => {
     let customHeaderId = config.header
     let packetInfo;
     if(ext.getPacketInfoManager()) {
-    packetInfo = ext.getPacketInfoManager().getAllPacketInfoFromName(HDirection.TOSERVER, 'ChangeMotto');
+    packetInfo = ext.getPacketInfoManager().getPacketInfoFromName(HDirection.TOSERVER, 'ChangeMotto');
     }
     let music = await getMusicName();
     if (music === undefined) music = config.notHaveMusic
