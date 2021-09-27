@@ -19,5 +19,5 @@ Soundcloud | <span style="color:red;">No ✖</span>
 ![](https://cdn.discordapp.com/attachments/891111404529156136/891994802651025428/spotify.gif)
 > Gif by @Alynva
 
-###Special Thanks
+### Special Thanks
 @Alynva and @WiredSpast that helped me understand various things about g-earth and fix my extension
