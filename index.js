@@ -8,7 +8,16 @@ const extensionInfo = {
     author: 'Lx'
 }
 
-const ext = new Extension(extensionInfo);
+const ext = new Extension(extensionInfo)
+
+process
+  .on('unhandledRejection', (reason, p) => {
+    ext.writeToConsole(`${reason.toString()} Unhandled Rejection at Promise ${p.toString()}`);
+  })
+  .on('uncaughtException', err => {
+    ext.writeToConsole(`${err.toString()} Uncaught Exception thrown`);
+  });
+  
 ext.run();
 
 ext.on('start', async () => {
@@ -48,6 +57,3 @@ ext.on('start', async () => {
     setMusicMoto()
     setInterval(() => setMusicMoto(), 1000);
 });
-
-
-
