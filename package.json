@@ -1,0 +1,17 @@
+{
+  "name": "listeningmission",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "LX",
+  "license": "ISC",
+  "dependencies": {
+    "get-window-by-name": "^2.0.0",
+    "gnode-api": "^0.0.1-beta.24",
+    "node-process-windows": "^0.0.2",
+    "ps-list": "^7.2.0"
+  }
+}
