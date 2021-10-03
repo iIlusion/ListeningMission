@@ -1,5 +1,8 @@
-const { Extension, HPacket, HDirection } = require('gnode-api');
-var processWindows = require("node-process-windows");
+import { Extension, HPacket, HDirection } from 'gnode-api'
+import processlist from 'node-processlist';
+import {default as config} from './config.json'
+let spotifyPID;
+let oldMusic;
 
 const extensionInfo = {
     name: 'Listening Motto',
@@ -20,40 +23,43 @@ process
   
 ext.run();
 
-ext.on('start', async () => {
-    let oldMusic;
-    function getMusicName () {
-        return new Promise((resolve, reject) => {
-            processWindows.getProcesses(function(err, processes) {
-                if (err) {
-                    reject(err);
-                    return;
-                }
-                const found = processes.find(p => {
-                    return p.processName === 'Spotify' && p.mainWindowTitle && p.mainWindowTitle !== 'Spotify Free' && p.mainWindowTitle !== 'Spotify Premium';
-                });
-                if (found) {
-                    resolve(found.mainWindowTitle);
-                } else {
-                    resolve();
-                }
-            });
-        });
+
+ext.on('start', async () =>{
+    async function ListeningMotto() {
+        let customHeaderId = config.header
+        let packetInfo;
+
+        if(ext.getPacketInfoManager()) packetInfo = ext.getPacketInfoManager().getPacketInfoFromName(HDirection.TOSERVER, 'ChangeMotto');
+
+
+        const spotify = await getSpotify()
+        if (!spotify) return
+        
+        const music = await getMusic()
+        if (oldMusic && oldMusic === music) return
+        oldMusic = music
+
+        let mottoPacket = new HPacket(`{l}{h:${packetInfo ? packetInfo.getHeaderId() : customHeaderId}}{s:"${config.listening}: ${music}"}`);
+        ext.sendToServer(mottoPacket)
+        
     }
-    async function setMusicMotto() {
-    var config = require("./config.json")
-    let customHeaderId = config.header
-    let packetInfo;
-    if(ext.getPacketInfoManager()) {
-    packetInfo = ext.getPacketInfoManager().getPacketInfoFromName(HDirection.TOSERVER, 'ChangeMotto');
-    }
-    let music = await getMusicName();
-    if (music === undefined) music = config.notHaveMusic
-    if (oldMusic && oldMusic === music) return
-    oldMusic = music
-    let motoPacket = new HPacket(`{l}{h:${packetInfo ? packetInfo.getHeaderId() : customHeaderId}}{s:"${config.listening}: ${music}"}`);
-    ext.sendToServer(motoPacket);
-    }
-    setMusicMotto()
-    setInterval(() => setMusicMotto(), 1000);
-});
+    setInterval(() => ListeningMotto(), 1000);
+    
+})
+
+async function getSpotify() {
+    const spotifyProcesses = await processlist.getProcessesByName('Spotify.exe', {verbose: true})
+    const spotifyWindow = spotifyProcesses.find(process => process.windowTitle !== 'N/A' && process.windowTitle !== 'AngleHiddenWindow')
+    spotifyPID = spotifyWindow.pid
+    return spotifyWindow
+}
+
+async function getMusic() {
+    let music
+    const spotifyProcess = await processlist.getProcessById(spotifyPID, {verbose: true})
+    if (spotifyProcess.windowTitle.startsWith('Spotify')) music = 'Nothing'
+    else if (spotifyProcess.windowTitle === 'Advertisement') music = 'AD'
+    else music = spotifyProcess.windowTitle
+
+    return music
+}   

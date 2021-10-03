@@ -2,16 +2,15 @@
   "name": "listeningmoto",
   "version": "0.0.1",
   "description": "",
+  "type": "module",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node --experimental-json-modules index.js"
   },
   "author": "Lx",
   "license": "ISC",
   "dependencies": {
-    "get-window-by-name": "^2.0.0",
     "gnode-api": "^0.0.1-beta.24",
-    "node-process-windows": "^0.0.2",
-    "ps-list": "^7.2.0"
+    "node-processlist": "^1.0.2"
   }
 }
