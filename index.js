@@ -103,17 +103,17 @@ async function ListeningMotto() {
   oldMusic = music;
 
   let mottoPacket = new HPacket(
-    `{out:ChangeMotto}{s:"${config.listening}: ${music}"}`
+    `{out:ChangeMotto}{s:"${music}"}`
   );
   ext.sendToServer(mottoPacket);
 
   let announcePacket = new HPacket(
-    `{out:Chat}{s:"${config.listening}: ${music}"}{i:0}{i:0}`
+    `{out:Chat}{s:"${music}"}{i:0}{i:0}`
   );
 
   if (announce && announce === "on") ext.sendToServer(announcePacket);
 
-  createMessage(`${config.listening}: ${music}`);
+  createMessage(`${music}`);
 }
 
 async function createMessage(text) {
