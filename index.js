@@ -102,14 +102,14 @@ async function ListeningMotto() {
   if (oldMusic && oldMusic === music) return;
   oldMusic = music;
 
-  let mottoPacket = new HPacket(
-    `{out:ChangeMotto}{s:"${config.listening}: ${music}"}`
-  );
+  let mottoPacket = new HPacket('ChangeMotto', HDirection.TOSERVER)
+    .appendString(`${config.listening}: ${music}`, 'utf-8')
   ext.sendToServer(mottoPacket);
 
-  let announcePacket = new HPacket(
-    `{out:Chat}{s:"${config.listening}: ${music}"}{i:0}{i:0}`
-  );
+  let announcePacket = new HPacket('Chat', HDirection.TOSERVER)
+    .appendString(`${config.listening}: ${music}`)
+    .appendInt(0)
+    .appendInt(0)
 
   if (announce && announce === "on") ext.sendToServer(announcePacket);
 
@@ -117,9 +117,16 @@ async function ListeningMotto() {
 }
 
 async function createMessage(text) {
-  let messagePacket = new HPacket(
-    `{in:NotificationDialog}{s:""}{i:3}{s:"display"}{s:"BUBBLE"}{s:"message"}{s:"${text}"}{s:"image"}{s:"https://raw.githubusercontent.com/sirjonasxx/G-ExtensionStore/repo/1.5.1/store/extensions/ListeningMotto/icon.png"}`
-  );
+  let messagePacket = new HPacket('NotificationDialog', HDirection.TOCLIENT)
+    .appendString("")
+    .appendInt(3)
+    .appendString("display")
+    .appendString("BUBBLE")
+    .appendString("message")
+    .appendString(text, 'utf-8')
+    .appendString("image")
+    .appendString("https://raw.githubusercontent.com/sirjonasxx/G-ExtensionStore/repo/1.5.1/store/extensions/ListeningMotto/icon.png")
+
   ext.sendToClient(messagePacket);
 }
 
@@ -129,6 +136,7 @@ async function getMotto() {
 }
 
 async function setOldMotto() {
-  let setMottoPacket = new HPacket(`{out:ChangeMotto}{s:"${oldMotto}"}`);
+  let setMottoPacket = new HPacket('ChangeMotto', HDirection.TOSERVER)
+    .appendString(oldMotto, 'utf-8')
   ext.sendToServer(setMottoPacket);
 }
