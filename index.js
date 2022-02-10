@@ -8,7 +8,7 @@ import {
 import processlist from "node-processlist";
 import { default as config } from "./config.json";
 let spotifyPID, oldMusic, oldMotto, announce;
-let state = "off";
+let state = false;
 
 const extensionInfo = {
   name: "Listening Motto",
@@ -44,11 +44,11 @@ ext.interceptByNameOrHash(HDirection.TOSERVER, "Chat", (hMessage) => {
     hMessage.setBlocked(true);
 
     if (message.startsWith("!announce")) {
-      if (!announce || announce === "off") {
-        announce = "on";
+      if (!announce) {
+        announce = true;
         createMessage("You turned on the announce chat message");
       } else {
-        announce = "off";
+        announce = false;
         createMessage("You turned off the announce chat message");
       }
     }
@@ -56,13 +56,13 @@ ext.interceptByNameOrHash(HDirection.TOSERVER, "Chat", (hMessage) => {
 });
 
 ext.on("click", async () => {
-  if (state === "off") {
-    state = "on";
+  if (state === false) {
+    state = true;
     getMotto();
     setInterval(() => ListeningMotto(), 1000);
     createMessage("Started ListeningMotto successfully!");
   } else {
-    state = "off";
+    state = false;
     clearInterval(ListeningMotto());
     setOldMotto();
     createMessage("Stopped ListeningMotto successfully!");
@@ -111,7 +111,7 @@ async function ListeningMotto() {
     `{out:Chat}{s:"${config.listening}: ${music}"}{i:0}{i:0}`
   );
 
-  if (announce && announce === "on") ext.sendToServer(announcePacket);
+  if (announce) ext.sendToServer(announcePacket);
 
   createMessage(`${config.listening}: ${music}`);
 }
