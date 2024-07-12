@@ -1,23 +1,23 @@
-import {
-  Extension,
-  HPacket,
-  HDirection,
-  HMessage,
-  HUserProfile,
-} from "gnode-api";
-import processlist from "node-processlist";
-import { default as config } from "./config.json";
-let spotifyPID, oldMusic, oldMotto, announce;
-let state = false;
+import { Extension, HPacket, HDirection } from "gnode-api";
+import { setMotto, getMotto, createNotification, getMusic, getSpotify, sendMessage, formatListeningText } from "./utils/index.js";
+
+let oldMusic, oldMotto
+let announce = false
+let enabled = false;
+
+export const listeningText = "Listening"
+export const noMusicText = "Nothing"
 
 const extensionInfo = {
   name: "Listening Motto",
   description: "Display current spotify music you listening in your motto.",
-  version: "1.0",
+  version: "2.0",
   author: "Lxx",
 };
 
-const ext = new Extension(extensionInfo);
+let spotify
+export let spotifyPID
+export const ext = new Extension(extensionInfo);
 
 process
   .on("unhandledRejection", (reason, p) => {
@@ -41,102 +41,62 @@ ext.interceptByNameOrHash(HDirection.TOSERVER, "Chat", (hMessage) => {
   let message = hPacket.readString();
 
   if (message.startsWith("!")) {
-    hMessage.setBlocked(true);
+    hMessage.blocked = true
 
     if (message.startsWith("!announce")) {
-      if (!announce) {
-        announce = true;
-        createMessage("You turned on the announce chat message");
-      } else {
-        announce = false;
-        createMessage("You turned off the announce chat message");
-      }
+      announce = !announce
+      createNotification(`You turned announce ${announce ? "On" : "Off"}`)
     }
   }
 });
 
 ext.on("click", async () => {
-  if (state === false) {
-    state = true;
+  if (!enabled) {
+    enabled = true;
     getMotto();
     setInterval(() => ListeningMotto(), 1000);
-    createMessage("Started ListeningMotto successfully!");
+    createNotification("Started ListeningMotto successfully!");
   } else {
-    state = false;
+    enabled = false;
+    
     clearInterval(ListeningMotto());
-    setOldMotto();
-    createMessage("Stopped ListeningMotto successfully!");
+    clearInterval(checkSpotify());
+
+    setMotto(oldMotto);
+
+    createNotification(`Restored Motto to old motto: ${oldMotto}`)
+    createNotification("Stopped ListeningMotto successfully!");
   }
 });
 
-async function getSpotify() {
-  const spotifyProcesses = await processlist.getProcessesByName("Spotify.exe", {
-    verbose: true,
-  });
-  const spotifyWindow = spotifyProcesses.find(
-    (process) =>
-      process.windowTitle !== "N/A" &&
-      process.windowTitle !== "AngleHiddenWindow"
-  );
-  spotifyPID = spotifyWindow.pid;
-  return spotifyWindow;
-}
-
-async function getMusic() {
-  let music;
-  const spotifyProcess = await processlist.getProcessById(spotifyPID, {
-    verbose: true,
-  });
-  if (spotifyProcess.windowTitle.startsWith("Spotify")) music = "Nothing";
-  else if (spotifyProcess.windowTitle === "Advertisement") music = "AD";
-  else music = spotifyProcess.windowTitle;
-
-  return music;
-}
-
 async function ListeningMotto() {
-  const spotify = await getSpotify();
-  if (!spotify) return;
+  if (!spotify) {
+    spotify = await getSpotify();
+    if (spotify) {
+      setInterval(() => checkSpotify(), 5000)
+    }
+    return
+  }
+
+  spotifyPID = spotify.pid
 
   const music = await getMusic();
   if (oldMusic && oldMusic === music) return;
+  
   oldMusic = music;
+  const musicText = formatListeningText(music)
+  
+  createNotification(`Listening: ${music}`);
 
-  let mottoPacket = new HPacket('ChangeMotto', HDirection.TOSERVER)
-    .appendString(`${config.listening}: ${music}`, 'utf-8')
-  ext.sendToServer(mottoPacket);
-
-  let announcePacket = new HPacket('Chat', HDirection.TOSERVER)
-    .appendString(`${config.listening}: ${music}`)
-    .appendInt(0)
-    .appendInt(0)
-
-  if (announce) ext.sendToServer(announcePacket);
-
-  createMessage(`${config.listening}: ${music}`);
+  setMotto(`${musicText}`)
+  
+  if (announce) {
+    sendMessage(`Listening: ${music}`)
+  }
 }
 
-async function createMessage(text) {
-  let messagePacket = new HPacket('NotificationDialog', HDirection.TOCLIENT)
-    .appendString("")
-    .appendInt(3)
-    .appendString("display")
-    .appendString("BUBBLE")
-    .appendString("message")
-    .appendString(text, 'utf-8')
-    .appendString("image")
-    .appendString("https://raw.githubusercontent.com/sirjonasxx/G-ExtensionStore/repo/1.5.1/store/extensions/ListeningMotto/icon.png")
-
-  ext.sendToClient(messagePacket);
-}
-
-async function getMotto() {
-  let infoPacket = new HPacket("{out:InfoRetrieve}");
-  ext.sendToServer(infoPacket);
-}
-
-async function setOldMotto() {
-  let setMottoPacket = new HPacket('ChangeMotto', HDirection.TOSERVER)
-    .appendString(oldMotto, 'utf-8')
-  ext.sendToServer(setMottoPacket);
+export async function checkSpotify() {
+  const spotifyProcess = await getSpotify()
+  if (!spotifyProcess) spotify = undefined
+  else return
 }
